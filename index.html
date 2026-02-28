@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>MoneyTree</title>
+</head>
+<body>
+
+  <h1>MoneyTree</h1>
+
+  <h2>Criar Conta</h2>
+  <input type="email" id="email" placeholder="Email">
+  <input type="password" id="password" placeholder="Senha">
+  <button onclick="signUp()">Criar Conta</button>
+
+  <h2>Login</h2>
+  <button onclick="signIn()">Entrar</button>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <script>
+
+    // 1️⃣ CONEXÃO COM SUPABASE
+    const supabaseUrl = "https://pfjlboniihgrgmbodapr.supabase.co"
+    const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBmamxib25paWhncmdtYm9kYXByIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE4MjYyNjYsImV4cCI6MjA4NzQwMjI2Nn0.F0sh_E-JR60D_W1p3hJt0_idsm2JsO1f8WoYcf27dN4"
+
+    const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey)
+    
+    // 2️⃣ CRIAR CONTA
+    async function signUp() {
+
+      const email = document.getElementById("email").value
+      const password = document.getElementById("password").value
+
+      const { data, error } = await supabaseClient.auth.signUp({
+        email: email,
+        password: password
+      })
+      if (error) {
+      alert("Erro: " + error.message)
+    } else {
+      alert("Login realizado com sucesso!")
+    }
+
+    }
+
+
+    // 3️⃣ LOGIN
+    async function signIn() {
+
+      const email = document.getElementById("email").value
+      const password = document.getElementById("password").value
+
+      const { data, error } = await supabaseClient.auth.signInWithPassword({
+        email: email,
+        password: password
+      })
+      
+
+      if (!error) {
+        window.location.href = "dashboard.html"
+      }else{
+        alert("Erro: " + error.message)      
+      }
+
+    }
+    // 🔎 VERIFICAR SESSÃO AO ABRIR A PÁGINA
+    async function checkSession() {
+
+      const { data, error } = await supabaseClient.auth.getSession()
+
+      if (data.session) {
+        window.location.href = "dashboard.html"
+      }
+
+    }
+
+    checkSession()
+
+
+  </script>
+
+</body>
+</html>
