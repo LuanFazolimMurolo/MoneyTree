@@ -105,133 +105,139 @@ user_config:
                 1       |   1-luan   |fevereiro |   green   |   null
 
 */
+let id_geral = 0;
 
+function montarArvore(lista_categorias, parentId = null, seen = new Set()) {
+  return lista_categorias
+    .filter(item => item.parent_id === parentId && !seen.has(item.id))
+    .map(item => {
+      seen.add(item.id);
+      let filhos = montarArvore(lista_categorias, item.id, seen);
+      return { ...item, filhos };
+    });
+}
 
+// Lista inicial
+let lista = [
+  { id: 1, categoria: 0, color: "green", parent_id: null }
+];
 
-let id_geral = 0
+let arvore = montarArvore(lista);
 
-function montarArvore(lista_categorias, parentId = null) {
-    return lista_categorias
-      .filter(item => item.parent_id === parentId)
-      .map(item => ({
-        ...item,
-        filhos: montarArvore(lista_categorias, item.id)
-      }))
+// Mostra a árvore na tela
+function mostrarTela(arvore) {
+  for (let i = 0; i < 4; i++) {
+    let col = document.getElementById("coluna_" + i);
+    if (col) col.innerHTML = "";
   }
 
-function limitarNivel(arvore, nivelMaximo, nivelAtual = 0) {
-  
-  return arvore.map(item => ({
-    ...item,
-    filhos:
-      nivelAtual < nivelMaximo
-        ? limitarNivel(item.filhos, nivelMaximo, nivelAtual + 1)
-        : []
-  }))
-}
+  function percorrer(lista, nivel = 0) {
+    for (let item of lista) {
+      let coluna = document.getElementById("coluna_" + nivel);
+      if (coluna) {
+        let div = document.createElement("div");
+        div.id = `parent_${item.parent_id}_nivel_${nivel}_item_${item.id}`;
+        div.innerText = "ID: " + item.id;
+        div.style.marginBottom = "10px";
+        div.style.padding = "5px";
+        div.style.border = "1px solid black";
+        div.style.color = "white";
+        div.style.borderRadius = "10px";
+        div.style.background = item.color;
+        div.style.display = "flex";
+        div.style.alignItems = "center";
 
+        // Botão para adicionar filhos
+        if (nivel !== 3) {
+          let mais = document.createElement("button");
+          mais.innerText = "+";
+          mais.style.fontSize = "16px";
+          mais.style.padding = "0px 4px";
+          mais.style.background = "white";
+          mais.style.marginLeft = "auto";
 
-  
-let lista = [
-  { id: 1, categoria:0,color:"green", parent_id: null },
-  { id: 2, categoria:1,color:"red",parent_id: 1 },
-  { id: 3, categoria:1,color:"blue",parent_id: 1},
-  { id: 4, categoria:2,color:"red",parent_id: 2 },
-  { id: 5, categoria:2,color:"red",parent_id: 2 },
-  { id: 6, categoria:3,color:"blue",parent_id: 3 },
-  { id: 7, categoria:3,color:"red",parent_id: 4 }
-]
-
-let arvore = montarArvore(lista)
-
-
-
-function mostrarTela(arvore) {
-
-    // limpa colunas
-    for (let i = 1; i < 4; i++) {
-        let col = document.getElementById("coluna_" + i)
-        if (col) col.innerHTML = ""
-    }
-
-    function percorrer(lista, nivel = 0) {
-
-        for (let item of lista) {
-
-            let coluna = document.getElementById("coluna_" + nivel)
-
-            if (coluna) {
-              let div = document.createElement("div")
-              div.id = `parent_${item.parent_id}_nivel_${nivel}_item_${item.id}`
-              div.innerText = "ID: " + item.id
-              div.style.marginBottom = "10px"
-              div.style.padding = "5px"
-              div.style.border = "1px solid black"
-              div.style.color = "white"
-              div.style.borderRadius = "10px"
-              div.style.background = item.color
-              div.style.display = "flex"
-              
-              if (nivel !== 3){
-                let mais = document.createElement("button") 
-                mais.id = `mais_parent_${item.parent_id}_nivel_${nivel}_item_${item.id}`
-                mais.innerText = "+"
-                mais.style.fontSize = "16px"
-                mais.style.padding = "0px 4px"
-                mais.style.background = "white"
-                mais.style.marginLeft = "auto"
-                mais.addEventListener("click",() => additens(`mais_parent_${item.parent_id}_nivel_${nivel}_item_${item.id}`))
-                div.appendChild(mais)
-              }
-
-
-              coluna.appendChild(div)
-              
-
-   
-            }
-
-            if (item.filhos.length > 0) {
-                percorrer(item.filhos, nivel + 1)
-            }
+          mais.addEventListener("click", () => mostrarInput(div.id));
+          div.appendChild(mais);
         }
+
+        coluna.appendChild(div);
+      }
+
+      if (item.filhos.length > 0) percorrer(item.filhos, nivel + 1);
     }
+  }
 
-    percorrer(arvore)
+  percorrer(arvore);
 }
 
-async function carregarDados() {
-    /*const { data, error } = await supabase
-      .from('categorias') // nome da sua tabela
-      .select('*')
+// Mostra o input para adicionar novos itens
+function mostrarInput(parentId) {
+  if (document.getElementById("input_" + parentId)) return;
 
-    if (error) {
-      console.error('Erro ao buscar dados:', error)
-      return
-    }*/
-   
-    /*let arvoreFiltrada = limitarNivel(arvore, 1)
-    document.getElementById("res").innerHTML =
-    `<pre>${JSON.stringify(arvoreFiltrada, null, 2)}</pre>`*/
-    mostrarTela(arvore)
+  let input = document.createElement("div");
+  input.id = "input_" + parentId;
+  input.innerHTML = `
+    <input type="color" id="color_${parentId}" value="#097811">
+    <input type="text" id="name_${parentId}" placeholder="Nome">
+    <input type="button" value=">>" id="btn_${parentId}">
+  `;
 
-    
-   
+  document.querySelector(".botoes").appendChild(input);
 
+  // Adiciona evento ao botão
+  document.getElementById(`btn_${parentId}`).addEventListener("click", () => {
+    addItens(parentId, input);
+  });
 }
 
+// Adiciona novo item na lista e atualiza a tela
+function addItens(parentId, inputDiv) {
+  if (!inputDiv) return;
 
+  let colorInput = inputDiv.querySelector(`input[type="color"]`);
+  let nameInput = inputDiv.querySelector(`input[type="text"]`);
 
-function additens(codig){
-    console.log(codig)
-    let color = document.getElementById("color").value
-    let name = document.getElementById("name").value
-    id_geral +=1
-    lista.push({
-      id: id_geral,
+  let color = colorInput ? colorInput.value : "#000000";
+  let name = nameInput ? nameInput.value : "";
 
-    })
-    console.log(`${color} ${name}`)
+  id_geral += 1;
+
+  // Descobre o nível do pai
+  let codificar = parentId.split("_");
+  let nivelPai = parseInt(codificar[3]);
+  let nivel = nivelPai + 1;
+
+  let paiId = parseInt(codificar[5]);
+  let novoId = id_geral + 1;
+
+  if (paiId === novoId) {
+    console.error("Não pode adicionar item como filho de si mesmo");
+    return;
+  }
+
+  // Se for nível > 1, herda cor do antecessor
+  if (nivel > 1) {
+    let antepassado = lista.find(item => item.id === paiId && (item.categoria === 1 || item.categoria === 2));
+    if (antepassado) color = antepassado.color;
+  }
+
+  let novoItem = {
+    id: id_geral,
+    categoria: nivel,
+    color: color,
+    parent_id: paiId,
+    name: name
+  };
+
+  lista.push(novoItem);
+
+  // Remove input
+  inputDiv.remove();
+
+  // Reconstrói a árvore
+  arvore = montarArvore(lista);
+  mostrarTela(arvore);
 }
 
-carregarDados()
+// Inicializa a tela
+mostrarTela(arvore);
