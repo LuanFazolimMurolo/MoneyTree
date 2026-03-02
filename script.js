@@ -105,139 +105,93 @@ user_config:
                 1       |   1-luan   |fevereiro |   green   |   null
 
 */
-let id_geral = 0;
+let id_geral = 5;
 
-function montarArvore(lista_categorias, parentId = null, seen = new Set()) {
-  return lista_categorias
-    .filter(item => item.parent_id === parentId && !seen.has(item.id))
+function montarArvore(lista, parentId = null, seen = new Set()) {
+  return lista
+    .filter(item => item.parent_id == parentId && !seen.has(item.id))
     .map(item => {
       seen.add(item.id);
-      let filhos = montarArvore(lista_categorias, item.id, seen);
+      let filhos = montarArvore(lista, item.id, seen);
       return { ...item, filhos };
     });
 }
 
 // Lista inicial
 let lista = [
-  { id: 1, categoria: 0, color: "green", parent_id: null }
+  { id: 1, categoria: 0, color: "green", parent_id: null },
+  { id: 2, categoria: 1, color: "red", parent_id: 1 },
+  { id: 3, categoria: 2, color: "red", parent_id: 2 },
+  { id: 4, categoria: 1, color: "yellow", parent_id: 1 },
+  { id: 5, categoria: 3, color: "red", parent_id: 3 },
+
+
 ];
 
 let arvore = montarArvore(lista);
+console.log(arvore)
 
-// Mostra a árvore na tela
-function mostrarTela(arvore) {
-  for (let i = 0; i < 4; i++) {
-    let col = document.getElementById("coluna_" + i);
-    if (col) col.innerHTML = "";
-  }
-
-  function percorrer(lista, nivel = 0) {
-    for (let item of lista) {
-      let coluna = document.getElementById("coluna_" + nivel);
-      if (coluna) {
+function criarItens(arvore) {
+     
+    arvore.forEach(item => {
+       
+        let col = document.getElementById("coluna_"+item.categoria);
         let div = document.createElement("div");
-        div.id = `parent_${item.parent_id}_nivel_${nivel}_item_${item.id}`;
-        div.innerText = "ID: " + item.id;
-        div.style.marginBottom = "10px";
-        div.style.padding = "5px";
-        div.style.border = "1px solid black";
-        div.style.color = "white";
-        div.style.borderRadius = "10px";
+        div.id = `id_${item.id}_cat_${item.categoria}_parent_${item.parent_id}_color_${item.color}`;
+        div.className = "item_"+item.categoria;
         div.style.background = item.color;
-        div.style.display = "flex";
-        div.style.alignItems = "center";
+        div.textContent = item.id;
 
-        // Botão para adicionar filhos
-        if (nivel !== 3) {
-          let mais = document.createElement("button");
-          mais.innerText = "+";
-          mais.style.fontSize = "16px";
-          mais.style.padding = "0px 4px";
-          mais.style.background = "white";
-          mais.style.marginLeft = "auto";
 
-          mais.addEventListener("click", () => mostrarInput(div.id));
-          div.appendChild(mais);
+
+        
+        if (item.categoria != 3){
+          let mais = document.createElement("button")
+          mais.id = "mais-"+div.id
+          mais.style.width = "15px"
+          mais.textContent = "+"
+          mais.style.marginLeft = "auto"
+          mais.style.cursor = "pointer"
+          mais.addEventListener("click", () => addList(div.id));
+
+          div.appendChild(mais)
         }
+        col.appendChild(div);
 
-        coluna.appendChild(div);
-      }
-
-      if (item.filhos.length > 0) percorrer(item.filhos, nivel + 1);
-    }
-  }
-
-  percorrer(arvore);
+        if (item.filhos.length > 0) {
+            criarItens(item.filhos);
+        }
+    });
 }
 
-// Mostra o input para adicionar novos itens
-function mostrarInput(parentId) {
-  if (document.getElementById("input_" + parentId)) return;
 
-  let input = document.createElement("div");
-  input.id = "input_" + parentId;
-  input.innerHTML = `
-    <input type="color" id="color_${parentId}" value="#097811">
-    <input type="text" id="name_${parentId}" placeholder="Nome">
-    <input type="button" value=">>" id="btn_${parentId}">
-  `;
+function addList(id_co){ 
+    let codificar = id_co.split("_");
+    let id = codificar[1]
+    let cat = parseInt(codificar[3])
+    let parent_id = codificar[5]
+    let color = codificar[7]
 
-  document.querySelector(".botoes").appendChild(input);
+    console.log(`id ${id} - cat ${cat} - parent ${parent_id}`)
+    id_geral+=1
 
-  // Adiciona evento ao botão
-  document.getElementById(`btn_${parentId}`).addEventListener("click", () => {
-    addItens(parentId, input);
+    lista.push({
+      id: id_geral,
+      categoria: cat+1,
+      color:color ,
+      parent_id: id
+  });
+
+    arvore = montarArvore(lista);
+    console.log(lista)
+
+    limparTela();        // 👈 limpa primeiro
+    criarItens(arvore);  // 👈 renderiza de novo
+}
+
+function limparTela() {
+  document.querySelectorAll(".coluna").forEach(col => {
+    col.innerHTML = "";
   });
 }
-
-// Adiciona novo item na lista e atualiza a tela
-function addItens(parentId, inputDiv) {
-  if (!inputDiv) return;
-
-  let colorInput = inputDiv.querySelector(`input[type="color"]`);
-  let nameInput = inputDiv.querySelector(`input[type="text"]`);
-
-  let color = colorInput ? colorInput.value : "#000000";
-  let name = nameInput ? nameInput.value : "";
-
-  id_geral += 1;
-
-  // Descobre o nível do pai
-  let codificar = parentId.split("_");
-  let nivelPai = parseInt(codificar[3]);
-  let nivel = nivelPai + 1;
-
-  let paiId = parseInt(codificar[5]);
-  let novoId = id_geral + 1;
-
-  if (paiId === novoId) {
-    console.error("Não pode adicionar item como filho de si mesmo");
-    return;
-  }
-
-  // Se for nível > 1, herda cor do antecessor
-  if (nivel > 1) {
-    let antepassado = lista.find(item => item.id === paiId && (item.categoria === 1 || item.categoria === 2));
-    if (antepassado) color = antepassado.color;
-  }
-
-  let novoItem = {
-    id: id_geral,
-    categoria: nivel,
-    color: color,
-    parent_id: paiId,
-    name: name
-  };
-
-  lista.push(novoItem);
-
-  // Remove input
-  inputDiv.remove();
-
-  // Reconstrói a árvore
-  arvore = montarArvore(lista);
-  mostrarTela(arvore);
-}
-
-// Inicializa a tela
-mostrarTela(arvore);
+criarItens(arvore)
