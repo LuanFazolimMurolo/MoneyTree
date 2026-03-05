@@ -63,7 +63,6 @@ me explique parte por parte desse ccodigo
 
 
 
-
 --- MES PARA CATEGORIA 1 ---
 
 categories:
@@ -105,7 +104,22 @@ user_config:
                 1       |   1-luan   |fevereiro |   green   |   null
 
 */
+
+
+
+// -- INICIO 
 let id_geral = 5;
+const ROW_HEIGHT = 72;
+
+//ista inicial
+let lista = [
+  { id: 1, categoria: 0, color: "green", parent_id: null },
+  { id: 2, categoria: 1, color: "red", parent_id: 1 },
+  { id: 3, categoria: 2, color: "red", parent_id: 2 },
+  { id: 4, categoria: 1, color: "blue", parent_id: 1 },
+  { id: 5, categoria: 3, color: "red", parent_id: 3 }
+];
+
 
 function montarArvore(lista, parentId = null, seen = new Set()) {
   return lista
@@ -117,76 +131,106 @@ function montarArvore(lista, parentId = null, seen = new Set()) {
     });
 }
 
-// Lista inicial
-let lista = [
-  { id: 1, categoria: 0, color: "green", parent_id: null },
-  { id: 2, categoria: 1, color: "red", parent_id: 1 },
-  { id: 3, categoria: 2, color: "red", parent_id: 2 },
-  { id: 4, categoria: 1, color: "yellow", parent_id: 1 },
-  { id: 5, categoria: 3, color: "red", parent_id: 3 },
-
-
-];
 
 let arvore = montarArvore(lista);
-console.log(arvore)
+console.log(arvore);
 
 function criarItens(arvore) {
-     
-    arvore.forEach(item => {
-       
-        let col = document.getElementById("coluna_"+item.categoria);
-        let div = document.createElement("div");
-        div.id = `id_${item.id}_cat_${item.categoria}_parent_${item.parent_id}_color_${item.color}`;
-        div.className = "item_"+item.categoria;
-        div.style.background = item.color;
-        div.textContent = item.id;
+  calcularLayout(arvore);
+  const itens = achatarArvore(arvore).sort((a, b) => a.y - b.y);
 
+  let maxY = 0;
 
+  itens.forEach(item => {
+    let col = document.getElementById("coluna_" + item.categoria);
+    let div = document.createElement("div");
+    div.id = `id_${item.id}_cat_${item.categoria}_parent_${item.parent_id}_color_${item.color}`;
+    div.className = "item_" + item.categoria;
+    div.style.background = item.color;
+    div.textContent = item.id;
 
-        
-        if (item.categoria != 3){
-          let mais = document.createElement("button")
-          mais.id = "mais-"+div.id
-          mais.style.width = "15px"
-          mais.textContent = "+"
-          mais.style.marginLeft = "auto"
-          mais.style.cursor = "pointer"
-          mais.addEventListener("click", () => addList(div.id));
+    if (item.categoria > 0) {
+      div.style.top = `${item.y * ROW_HEIGHT}px`;
+      maxY = Math.max(maxY, item.y);
+    }
 
-          div.appendChild(mais)
-        }
-        col.appendChild(div);
+    if (item.categoria != 3) {
+      let mais = document.createElement("button");
+      mais.id = "mais-" + div.id;
+      mais.style.width = "15px";
+      mais.textContent = "+";
+      mais.style.marginLeft = "auto";
+      mais.style.cursor = "pointer";
+      mais.addEventListener("click", () => addList(div.id));
 
-        if (item.filhos.length > 0) {
-            criarItens(item.filhos);
-        }
-    });
-}
+      div.appendChild(mais);
+    }
 
-
-function addList(id_co){ 
-    let codificar = id_co.split("_");
-    let id = codificar[1]
-    let cat = parseInt(codificar[3])
-    let parent_id = codificar[5]
-    let color = codificar[7]
-
-    console.log(`id ${id} - cat ${cat} - parent ${parent_id}`)
-    id_geral+=1
-
-    lista.push({
-      id: id_geral,
-      categoria: cat+1,
-      color:color ,
-      parent_id: id
+    col.appendChild(div);
   });
 
-    arvore = montarArvore(lista);
-    console.log(lista)
+  const alturaColunas = `${(Math.ceil(maxY) + 1) * ROW_HEIGHT + 20}px`;
+  document.querySelector(".container").style.minHeight = alturaColunas;
+  document.querySelectorAll("#coluna_1, #coluna_2, #coluna_3").forEach(col => {
+    col.style.height = alturaColunas;
+  });
+}
+function calcularLayout(arvore) {
+  let proximaFolha = 0;
 
-    limparTela();        // 👈 limpa primeiro
-    criarItens(arvore);  // 👈 renderiza de novo
+  function definirY(item) {
+    if (!item.filhos || item.filhos.length === 0) {
+      item.y = proximaFolha;
+      proximaFolha += 1;
+      return item.y;
+    }
+
+    item.filhos.forEach(definirY);
+    item.y = (item.filhos[0].y + item.filhos[item.filhos.length - 1].y) / 2;
+    return item.y;
+  }
+
+  arvore.forEach(definirY);
+}
+function achatarArvore(arvore, itens = []) {
+  arvore.forEach(item => {
+    itens.push(item);
+    if (item.filhos && item.filhos.length > 0) {
+      achatarArvore(item.filhos, itens);
+    }
+  });
+
+  return itens;
+}
+criarItens(arvore);
+
+
+
+
+//-- BOTAO + 
+
+function addList(id_co) {
+  let codificar = id_co.split("_");
+  let id = codificar[1];
+  let cat = parseInt(codificar[3]);
+  let parent_id = codificar[5];
+  let color = codificar[7];
+
+  console.log(`id ${id} - cat ${cat} - parent ${parent_id}`);
+  id_geral += 1;
+
+  lista.push({
+    id: id_geral,
+    categoria: cat + 1,
+    color: color,
+    parent_id: id
+  });
+
+  arvore = montarArvore(lista);
+  console.log(lista);
+
+  limparTela();
+  criarItens(arvore);
 }
 
 function limparTela() {
@@ -194,4 +238,4 @@ function limparTela() {
     col.innerHTML = "";
   });
 }
-criarItens(arvore)
+
