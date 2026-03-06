@@ -67,10 +67,14 @@ me explique parte por parte desse ccodigo
 
 categories:
 
-            id(objeto)  |   id_user  |   nome    |   color   |   parent_id
+            id(objeto)  |   id_user  |   categoria    |   color   |   parent_id
 
-         --->   1       |   1-luan   | fevereiro |   green   |   null
-                2       |   1-luan   |categoria 1|    red    |    1  <---
+         --->   1       |   1-luan   |       0        |   green   |   null
+                2       |   1-luan   |       1        |    red    |    1  <---
+
+
+
+
 
 
 user_config:
@@ -110,8 +114,10 @@ user_config:
 // -- INICIO 
 let id_geral = 5;
 const ROW_HEIGHT = 72;
+const SVG_NS = "http://www.w3.org/2000/svg";
+let ligacoesRenderizadas = new Set();
 
-//ista inicial
+// lista inicial
 let lista = [
   { id: 1, categoria: 0, color: "green", parent_id: null },
   { id: 2, categoria: 1, color: "red", parent_id: 1 },
@@ -119,7 +125,6 @@ let lista = [
   { id: 4, categoria: 1, color: "blue", parent_id: 1 },
   { id: 5, categoria: 3, color: "red", parent_id: 3 }
 ];
-
 
 function montarArvore(lista, parentId = null, seen = new Set()) {
   return lista
@@ -130,7 +135,6 @@ function montarArvore(lista, parentId = null, seen = new Set()) {
       return { ...item, filhos };
     });
 }
-
 
 let arvore = montarArvore(lista);
 console.log(arvore);
@@ -174,7 +178,10 @@ function criarItens(arvore) {
   document.querySelectorAll("#coluna_1, #coluna_2, #coluna_3").forEach(col => {
     col.style.height = alturaColunas;
   });
+
+  desenharLigacoes();
 }
+
 function calcularLayout(arvore) {
   let proximaFolha = 0;
 
@@ -192,6 +199,7 @@ function calcularLayout(arvore) {
 
   arvore.forEach(definirY);
 }
+
 function achatarArvore(arvore, itens = []) {
   arvore.forEach(item => {
     itens.push(item);
@@ -202,13 +210,143 @@ function achatarArvore(arvore, itens = []) {
 
   return itens;
 }
+
+function garantirLayerLigacoes() {
+  let layer = document.getElementById("connections-layer");
+
+  if (!layer) {
+    layer = document.createElementNS(SVG_NS, "svg");
+    layer.id = "connections-layer";
+    document.body.appendChild(layer);
+  }
+
+  layer.setAttribute("width", String(document.documentElement.scrollWidth));
+  layer.setAttribute("height", String(document.documentElement.scrollHeight));
+
+  return layer;
+}
+
+function centroVertical(el) {
+  const rect = el.getBoundingClientRect();
+  return rect.top + window.scrollY + rect.height / 2;
+}
+
+function bordaDireita(el) {
+  const rect = el.getBoundingClientRect();
+  return rect.right + window.scrollX;
+}
+
+function bordaEsquerda(el) {
+  const rect = el.getBoundingClientRect();
+  return rect.left + window.scrollX;
+}
+
+function criarPathCurvo(x1, y1, x2, y2) {
+  const distancia = Math.max(45, (x2 - x1) * 0.5);
+  const c1x = x1 + distancia;
+  const c1y = y1 + (y2 - y1) * 0.08;
+  const c2x = x2 - distancia;
+  const c2y = y2 - (y2 - y1) * 0.08;
+
+  return `M ${x1} ${y1} C ${c1x} ${c1y}, ${c2x} ${c2y}, ${x2} ${y2}`;
+}
+
+function animarCaminho(path, duracao = 520) {
+  const comprimento = path.getTotalLength();
+  path.setAttribute("stroke-dasharray", String(comprimento));
+  path.setAttribute("stroke-dashoffset", String(comprimento));
+
+  if (typeof path.animate === "function") {
+    path.animate(
+      [
+        { strokeDashoffset: comprimento },
+        { strokeDashoffset: 0 }
+      ],
+      {
+        duration: duracao,
+        easing: "ease-out",
+        fill: "forwards"
+      }
+    );
+    return;
+  }
+
+  // Fallback para navegadores sem WAAPI.
+  path.style.transition = "none";
+  path.getBoundingClientRect();
+  path.style.transition = `stroke-dashoffset ${duracao}ms ease-out`;
+  path.setAttribute("stroke-dashoffset", "0");
+}
+
+function desenharLigacoes() {
+  const layer = garantirLayerLigacoes();
+  layer.innerHTML = "";
+  const novasLigacoes = new Set();
+
+  const itensMap = new Map();
+  document.querySelectorAll("[id^='id_']").forEach(el => {
+    const partes = el.id.split("_");
+    const id = Number(partes[1]);
+    itensMap.set(id, el);
+  });
+
+  lista.forEach(item => {
+    if (!item.parent_id) {
+      return;
+    }
+
+    const parentData = lista.find(node => Number(node.id) === Number(item.parent_id));
+    if (parentData && Number(parentData.categoria) === 0 && Number(item.categoria) === 1) {
+      return;
+    }
+
+    const parentEl = itensMap.get(Number(item.parent_id));
+    const filhoEl = itensMap.get(Number(item.id));
+
+    if (!parentEl || !filhoEl) {
+      return;
+    }
+
+    const chaveLigacao = `${item.parent_id}->${item.id}`;
+    novasLigacoes.add(chaveLigacao);
+
+    const corParent = parentEl.style.background || window.getComputedStyle(parentEl).backgroundColor;
+    const x1 = bordaDireita(parentEl) + 6;
+    const y1 = centroVertical(parentEl);
+    const x2 = bordaEsquerda(filhoEl) - 6;
+    const y2 = centroVertical(filhoEl);
+
+    const glow = document.createElementNS(SVG_NS, "path");
+    glow.setAttribute("d", criarPathCurvo(x1, y1, x2, y2));
+    glow.setAttribute("stroke", corParent);
+    glow.setAttribute("stroke-width", "12");
+    glow.setAttribute("stroke-linecap", "round");
+    glow.setAttribute("fill", "none");
+    glow.setAttribute("opacity", "0.18");
+
+    const linha = document.createElementNS(SVG_NS, "path");
+    linha.setAttribute("d", criarPathCurvo(x1, y1, x2, y2));
+    linha.setAttribute("stroke", corParent);
+    linha.setAttribute("stroke-width", "4");
+    linha.setAttribute("stroke-linecap", "round");
+    linha.setAttribute("fill", "none");
+    linha.setAttribute("opacity", "0.95");
+
+    layer.appendChild(glow);
+    layer.appendChild(linha);
+
+    if (!ligacoesRenderizadas.has(chaveLigacao)) {
+      animarCaminho(glow, 620);
+      animarCaminho(linha, 520);
+    }
+  });
+
+  ligacoesRenderizadas = novasLigacoes;
+}
+
 criarItens(arvore);
 
-
-
-
-//-- BOTAO + 
-
+// -- BOTAO +
 function addList(id_co) {
   let codificar = id_co.split("_");
   let id = codificar[1];
@@ -239,3 +377,5 @@ function limparTela() {
   });
 }
 
+window.addEventListener("resize", desenharLigacoes);
+window.addEventListener("scroll", desenharLigacoes);
