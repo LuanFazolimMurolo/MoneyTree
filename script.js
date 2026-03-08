@@ -116,14 +116,36 @@ let id_geral = 5;
 const ROW_HEIGHT = 72;
 const SVG_NS = "http://www.w3.org/2000/svg";
 let ligacoesRenderizadas = new Set();
+const tema_black = "#000000"
+const tema_soft_dark ="#2a2a2a"
+const tema_soft_light = "#c5c5c5"
+const tema_white = "#ffffff"
+const tema_cores = [
+  tema_black,
+  tema_soft_dark,  
+  tema_soft_light,
+  tema_white
+]
+
+let cor_atual = tema_soft_dark
+let tema_atual = cor_atual
+let cor_topo 
+
+const lista_tema = document.getElementById("cores_lista")
+const atual_tema = document.getElementById("cor_atual")
+
+
+
+
+
 
 // lista inicial
 let lista = [
-  { id: 1, categoria: 0, color: "green", parent_id: null },
-  { id: 2, categoria: 1, color: "red", parent_id: 1 },
-  { id: 3, categoria: 2, color: "red", parent_id: 2 },
-  { id: 4, categoria: 1, color: "blue", parent_id: 1 },
-  { id: 5, categoria: 3, color: "red", parent_id: 3 }
+  { id: 1, categoria: 0, color: "#806200", parent_id: null, nome: "Março",text_color: "#ffffff"}/*,
+  { id: 2, categoria: 1, color: "red", parent_id: 1, nome: "Lazer"},
+  { id: 3, categoria: 2, color: "red", parent_id: 2, nome: "Shows"},
+  { id: 4, categoria: 1, color: "blue", parent_id: 1, nome: "Dispezas"},
+  { id: 5, categoria: 3, color: "red", parent_id: 3, nome: "show 1" }*/
 ];
 
 function montarArvore(lista, parentId = null, seen = new Set()) {
@@ -148,15 +170,30 @@ function criarItens(arvore) {
   itens.forEach(item => {
     let col = document.getElementById("coluna_" + item.categoria);
     let div = document.createElement("div");
-    div.id = `id_${item.id}_cat_${item.categoria}_parent_${item.parent_id}_color_${item.color}`;
+    div.id = `id_${item.id}_cat_${item.categoria}_parent_${item.parent_id}_color_${item.color}_text-color_${item.text_color}`;
     div.className = "item_" + item.categoria;
-    div.style.background = item.color;
-    div.textContent = item.id;
+    div.style.color = item.text_color
+    div.style.background = item.color
+    let texto = document.createElement("span")
+    texto.className = "texto_item"
+    texto.textContent = item.nome
+
+    div.appendChild(texto)    
 
     if (item.categoria > 0) {
       div.style.top = `${item.y * ROW_HEIGHT}px`;
       maxY = Math.max(maxY, item.y);
+    }else{
+      cor_topo = item.color
     }
+
+    let edit = document.createElement("button")
+    //edit.style.background = 
+    edit.style.width ="35px"
+    edit.style.marginLeft = "auto"
+    edit.textContent = "edit"
+
+    div.appendChild(edit);
 
     if (item.categoria != 3) {
       let mais = document.createElement("button");
@@ -165,13 +202,18 @@ function criarItens(arvore) {
       mais.textContent = "+";
       mais.style.marginLeft = "auto";
       mais.style.cursor = "pointer";
-      mais.addEventListener("click", () => addList(div.id));
+      mais.addEventListener("click", () => Hud_addList(div.id));
 
       div.appendChild(mais);
     }
 
+
+
+
     col.appendChild(div);
   });
+
+
 
   const alturaColunas = `${(Math.ceil(maxY) + 1) * ROW_HEIGHT + 20}px`;
   document.querySelector(".container").style.minHeight = alturaColunas;
@@ -210,6 +252,223 @@ function achatarArvore(arvore, itens = []) {
 
   return itens;
 }
+
+
+// -- BOTAO +
+function addList(id_co,color_inp,nome_inp,text_color_inp) {
+  
+  console.log(nome_inp+ color_inp)
+  let codificar = id_co.split("_");
+  let id = codificar[1];
+  let cat = parseInt(codificar[3]);
+  let parent_id = codificar[5];
+  let color = codificar[7];
+  if (cat === 0){
+    color = color_inp
+  }
+
+  console.log(`id ${id} - cat ${cat} - parent ${parent_id}`);
+  id_geral += 1;
+
+  lista.push({
+    id: id_geral,
+    categoria: cat + 1,
+    color: color,
+    parent_id: id,
+    nome:nome_inp,
+    text_color:text_color_inp
+  });
+
+  arvore = montarArvore(lista);
+  console.log(lista);
+
+  limparTela();
+  Delet_hud_addList();
+  criarItens(arvore);
+}
+
+function limparTela() {
+  document.querySelectorAll(".coluna").forEach(col => {
+    col.innerHTML = "";
+  });
+}
+
+function Hud_addList(id_co){
+    let codificar = id_co.split("_");
+    let cat = parseInt(codificar[3]);
+
+    let color = codificar[7];
+    let text_color = codificar[9]
+
+    if(document.getElementById("overlay_hud_addList")) return;
+    let div = document.createElement("div")
+    div.className = "hidden_hud_addList"
+    div.id = "overlay_hud_addList"
+
+    // hud
+    let div_hud = document.createElement("div")
+    div_hud.id = "hud_addList"
+
+
+    //botao delet
+    let btn_delet = document.createElement("button")
+    btn_delet.textContent = "X"
+    btn_delet.id = "delet_hud_addList"
+    btn_delet.addEventListener("click", () => Delet_hud_addList());
+    
+     //previa
+    let div_previa = document.createElement("div")
+    div_previa.id = "previa_hud_addList"
+    div_previa.style.background = color
+    div_previa.style.color = text_color
+    let texto_previa = document.createElement("span")
+    texto_previa.id = "texto_previa"
+
+    texto_previa.textContent = "Abc123"
+    div_previa.appendChild(texto_previa)
+    //input color
+    let btn_color = document.createElement("input")
+    btn_color.type = "color"
+
+    btn_color.addEventListener("input", () => {
+    let cor = btn_color.value
+    div_previa.style.background = cor})
+
+    btn_color.id = "color_hud_addList"
+    btn_color.value = color
+
+
+
+    //input color_text
+    let btn_text_color = document.createElement("input")
+    btn_text_color.type = "color"
+    btn_text_color.addEventListener("input", () => {
+    let cor = btn_text_color.value
+    div_previa.style.color = cor})
+
+    btn_text_color.id = "text_color_hud_addList"
+    btn_text_color.value = text_color
+    
+    if (cat > 0){
+      btn_color.disabled = true
+      btn_text_color.disabled = true
+
+      btn_color.style.cursor = "not-allowed"
+      btn_text_color.style.cursor = "not-allowed"
+
+      btn_color.style.opacity = "0"
+      btn_text_color.style.opacity = "0"
+
+    }
+    //input nome
+    let btn_nome = document.createElement("input")
+    btn_nome.type = "text"
+    btn_nome.addEventListener("input", () => {
+    let texto = btn_nome.value
+    texto_previa.textContent = texto})
+
+    btn_nome.id = "nome_hud_addList"
+    
+    //input confirm
+    let btn_confirm = document.createElement("button")
+    btn_confirm.id = "confirm_hud_addList"
+    btn_confirm.textContent =">>"
+    btn_confirm.addEventListener("click", () => addList(id_co, btn_color.value, btn_nome.value, btn_text_color.value));
+    
+    div_hud.addEventListener("keydown", (e) => {
+
+      if(e.key === "Enter"){
+          addList(id_co, btn_color.value, btn_nome.value, btn_text_color.value)
+      }
+      })
+
+   
+
+
+    document.body.appendChild(div)
+    div.appendChild(div_hud)
+    div_hud.appendChild(btn_delet)
+    div_hud.appendChild(btn_color)
+    div_hud.appendChild(btn_text_color)
+
+    div_hud.appendChild(btn_nome)
+    div_hud.appendChild(btn_confirm)
+
+    div_hud.appendChild(div_previa)
+
+
+
+
+
+}
+function Delet_hud_addList(){
+  const overlay = document.getElementById("overlay_hud_addList")
+
+  overlay.remove()
+}
+
+criarItens(arvore);
+
+
+// --- TOPO FUNDO
+function corContraste(hex) {
+
+  hex = hex.replace("#","")
+
+  let r = parseInt(hex.substring(0,2),16)
+  let g = parseInt(hex.substring(2,4),16)
+  let b = parseInt(hex.substring(4,6),16)
+
+  // fórmula de luminosidade
+  let luminosidade = (0.299*r + 0.587*g + 0.114*b)
+
+  if(luminosidade > 186){
+      return "#000000" // fundo claro → texto preto
+  }else{
+      return "#ffffff" // fundo escuro → texto branco
+  }
+
+}
+
+tema_cores.forEach(cor => {
+    const item = document.createElement("div")
+    item.className = "cor_item"
+    item.style.background = cor
+    item.style.border = `5px solid ${cor_topo}`
+    item.style.color = corContraste(cor)
+    if (cor == cor_atual){
+      item.textContent = "X"
+    }
+
+    item.addEventListener("click", () => {
+        // remove X de todos
+        document.querySelectorAll(".cor_item").forEach(el=>{
+            el.textContent = ""
+        })
+
+        // coloca X no selecionado
+        item.textContent = "X"
+
+
+        cor_atual = cor
+        selecionarCor(cor)
+        let body = document.body
+        body.style.background = cor_atual 
+
+    })
+
+    lista_tema.appendChild(item)
+
+})
+
+function selecionarCor(cor){
+    console.log("cor escolhida:", cor)
+}
+
+
+
+
+// -- LINHAS  
 
 function garantirLayerLigacoes() {
   let layer = document.getElementById("connections-layer");
@@ -311,6 +570,8 @@ function desenharLigacoes() {
     novasLigacoes.add(chaveLigacao);
 
     const corParent = parentEl.style.background || window.getComputedStyle(parentEl).backgroundColor;
+    const corTexto = parentEl.style.color || window.getComputedStyle(parentEl).color;
+
     const x1 = bordaDireita(parentEl) + 6;
     const y1 = centroVertical(parentEl);
     const x2 = bordaEsquerda(filhoEl) - 6;
@@ -318,11 +579,11 @@ function desenharLigacoes() {
 
     const glow = document.createElementNS(SVG_NS, "path");
     glow.setAttribute("d", criarPathCurvo(x1, y1, x2, y2));
-    glow.setAttribute("stroke", corParent);
-    glow.setAttribute("stroke-width", "12");
+    glow.setAttribute("stroke", corTexto); 
+    glow.setAttribute("stroke-width", "7");
     glow.setAttribute("stroke-linecap", "round");
     glow.setAttribute("fill", "none");
-    glow.setAttribute("opacity", "0.18");
+    glow.setAttribute("opacity", "0.3");
 
     const linha = document.createElementNS(SVG_NS, "path");
     linha.setAttribute("d", criarPathCurvo(x1, y1, x2, y2));
@@ -344,38 +605,7 @@ function desenharLigacoes() {
   ligacoesRenderizadas = novasLigacoes;
 }
 
-criarItens(arvore);
 
-// -- BOTAO +
-function addList(id_co) {
-  let codificar = id_co.split("_");
-  let id = codificar[1];
-  let cat = parseInt(codificar[3]);
-  let parent_id = codificar[5];
-  let color = codificar[7];
-
-  console.log(`id ${id} - cat ${cat} - parent ${parent_id}`);
-  id_geral += 1;
-
-  lista.push({
-    id: id_geral,
-    categoria: cat + 1,
-    color: color,
-    parent_id: id
-  });
-
-  arvore = montarArvore(lista);
-  console.log(lista);
-
-  limparTela();
-  criarItens(arvore);
-}
-
-function limparTela() {
-  document.querySelectorAll(".coluna").forEach(col => {
-    col.innerHTML = "";
-  });
-}
 
 window.addEventListener("resize", desenharLigacoes);
 window.addEventListener("scroll", desenharLigacoes);
