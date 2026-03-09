@@ -7,7 +7,7 @@
 body{
   display: f;
   text-align: center;
-  background-color: #2a2a2a;
+  background-color: #c5c5c5;
   margin: 0;
   padding: 20px;
   position: relative;
@@ -132,6 +132,24 @@ body{
 
 }
 
+.campo_valor{
+
+  margin-left: 20px;
+}
+.valor{
+  max-width: 60px;
+  padding: 1px;
+  margin: 20px;
+  cursor: pointer;
+  color: white;
+  border: 3px solid black;
+  background-color: #47474779;
+  border-radius: 7px;
+  text-align: center;
+  padding: 10px;
+
+}
+
 #overlay_hud_addList{
 
     position: fixed;
@@ -217,23 +235,23 @@ body{
   padding-right: 45px;
   }
 
-  #confirm_hud_addList{
-  display: flex;
-  margin-left: -40px;
-  justify-content: center;
-  align-items: center;
-  max-width:30px ;
-  max-height: 20px;
-  width: 100%;
-  height: 100%;
-  cursor: pointer;
-  color: white;
-  border: 1px solid black;
-  background-color: #000000;
-  border-radius: 7px;
-  text-align: center;
-  padding: 10px;
-  }
+#confirm_hud_addList{
+display: flex;
+margin-left: -40px;
+justify-content: center;
+align-items: center;
+max-width:30px ;
+max-height: 20px;
+width: 100%;
+height: 100%;
+cursor: pointer;
+color: white;
+border: 1px solid black;
+background-color: #000000;
+border-radius: 7px;
+text-align: center;
+padding: 10px;
+}
 
 #text_color_hud_addList{
   max-width:20px ;
