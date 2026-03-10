@@ -195,11 +195,17 @@ function calcularSomas(item){
       let texto = document.createElement("span")
       texto.className = "texto_item"
       texto.textContent = item.nome
+      let out_valor = document.createElement("span")
+      out_valor.className = "out_valor"
+      item_valor =  item.valor || 0
+      item_valor = parseFloat(item_valor).toFixed(2)
+      out_valor.textContent = "R$ " + item_valor.replace(".", ",")
     
       col.appendChild(div);
 
 
       div.appendChild(texto)    
+      div.appendChild(out_valor)
 
       if (item.categoria > 0) {
         div.style.top = `${item.y * ROW_HEIGHT}px`;
@@ -216,7 +222,6 @@ function calcularSomas(item){
       div_botoes.style.display = "flex"
       div_botoes.style.gap = "5px"
       div_botoes.style.marginLeft = "auto"
-      div_botoes.style.paddingRight = "20px"
 
       div.appendChild(div_botoes)
       
@@ -289,9 +294,9 @@ function calcularSomas(item){
 
 
   // -- BOTAO +
-  function addList(id_co,color_inp,nome_inp,text_color_inp) {
+  function addList(id_co,color_inp,nome_inp,text_color_inp,valor_inp) {
     
-    console.log(nome_inp+ color_inp)
+    console.log(valor_inp *100)
     let codificar_ed_ma = id_co.split("-")
     let ed_ma = codificar_ed_ma[0]
     let codificar = id_co.split("_");
@@ -312,7 +317,8 @@ function calcularSomas(item){
         color: color,
         parent_id: id,
         nome:nome_inp,
-        text_color:text_color_inp
+        text_color:text_color_inp,
+        valor: valor_inp
       });
       }else{
 
@@ -324,7 +330,7 @@ function calcularSomas(item){
   item.nome = nome_inp
   item.color = color_inp
   item.text_color = text_color_inp
-
+  item.valor = valor_inp
   if (cat > 0){
 
     // atualiza todos os filhos
@@ -358,12 +364,15 @@ function calcularSomas(item){
         return filhos
       }
     arvore = montarArvore(lista);
- 
+    arvore.forEach(raiz=>{
+      calcularSomas(raiz)
+    })
     console.log(lista);
 
     limparTela();
     Delet_hud_addList();
     criarItens(arvore);
+
   }
 
   function limparTela() {
@@ -372,142 +381,239 @@ function calcularSomas(item){
     });
   }
 
-  function Hud_addList(id_co){
-      let codificar = id_co.split("_");
-      let codificar_ed_ma = id_co.split("-")
-      let ed_ma = codificar_ed_ma[0]
-      let cat = parseInt(codificar[3]);
-      let color = codificar[7];
-      let text_color = codificar[9]
-      let nome = codificar[11]
+ function Hud_addList(id_co){
 
-      if(document.getElementById("overlay_hud_addList")) return;
-      let div = document.createElement("div")
-      div.className = "hidden_hud_addList"
-      div.id = "overlay_hud_addList"
+    let codificar = id_co.split("_");
+    let codificar_ed_ma = id_co.split("-")
+    let ed_ma = codificar_ed_ma[0]
+    let cat = parseInt(codificar[3]);
+    let color = codificar[7];
+    let text_color = codificar[9]
+    let nome = codificar[11]
 
-      // hud
-      let div_hud = document.createElement("div")
-      div_hud.id = "hud_addList"
+    if(document.getElementById("overlay_hud_addList")) return;
 
+    let div = document.createElement("div")
+    div.className = "hidden_hud_addList"
+    div.id = "overlay_hud_addList"
 
-      //botao delet
-      let btn_delet = document.createElement("button")
-      btn_delet.textContent = "X"
-      btn_delet.id = "delet_hud_addList"
-      btn_delet.addEventListener("click", () => Delet_hud_addList());
-      
-      //previa
-      let div_previa = document.createElement("div")
-      div_previa.id = "previa_hud_addList"
-      div_previa.style.background = color
-      div_previa.style.color = text_color
-      let texto_previa = document.createElement("span")
-      texto_previa.id = "texto_previa"
-
-      texto_previa.textContent = "Abc123"
-      if (ed_ma === "edit"){
-          texto_previa.textContent = nome
-
+    // fechar clicando fora
+    div.addEventListener("click", (e)=>{
+      if(e.target === div){
+        Delet_hud_addList()
       }
-      div_previa.appendChild(texto_previa)
-      //input color
-      let btn_color = document.createElement("input")
-      btn_color.type = "color"
+    })
 
-      btn_color.addEventListener("input", () => {
+    // hud
+    let div_hud = document.createElement("div")
+    div_hud.id = "hud_addList"
+
+    // ESC fecha
+    div_hud.addEventListener("keydown",(e)=>{
+      if(e.key === "Escape"){
+        e.preventDefault()
+        Delet_hud_addList()
+      }
+    })
+
+    //botao delet
+    let btn_delet = document.createElement("button")
+    btn_delet.textContent = "X"
+    btn_delet.id = "delet_hud_addList"
+    btn_delet.addEventListener("click", () => Delet_hud_addList());
+
+
+    // PREVIA
+    let div_previa = document.createElement("div")
+    div_previa.id = "previa_hud_addList"
+    div_previa.style.background = color
+    div_previa.style.color = text_color
+
+    let texto_previa = document.createElement("span")
+    texto_previa.id = "texto_previa"
+
+    texto_previa.textContent = "Abc123"
+
+    let valor_previa = document.createElement("span")
+    valor_previa.id = "valor_previa"
+    valor_previa.textContent = "R$ 0,00"
+    valor_previa.style.fontWeight = "bold"
+
+
+    if (ed_ma === "edit"){
+      texto_previa.textContent = nome
+      let itemArvore = achatarArvore(arvore).find(i => i.id == codificar[1])
+      let valorItem = itemArvore ? itemArvore.valor : 0
+
+      valor_previa.textContent ="R$ " + (parseFloat(valorItem) || 0).toFixed(2).replace(".", ",")    
+      }
+
+
+    div_previa.appendChild(texto_previa)
+    div_previa.appendChild(valor_previa)
+
+
+    // INPUT COLOR
+    let btn_color = document.createElement("input")
+    btn_color.type = "color"
+
+    btn_color.addEventListener("input", () => {
       let cor = btn_color.value
-      div_previa.style.background = cor})
+      div_previa.style.background = cor
+    })
 
-      btn_color.id = "color_hud_addList"
-      btn_color.value = color
+    btn_color.id = "color_hud_addList"
+    btn_color.value = color
 
 
+    // INPUT COLOR TEXTO
+    let btn_text_color = document.createElement("input")
+    btn_text_color.type = "color"
 
-      //input color_text
-      let btn_text_color = document.createElement("input")
-      btn_text_color.type = "color"
-      btn_text_color.addEventListener("input", () => {
+    btn_text_color.addEventListener("input", () => {
       let cor = btn_text_color.value
-      div_previa.style.color = cor})
+      div_previa.style.color = cor
+    })
 
-      btn_text_color.id = "text_color_hud_addList"
-      btn_text_color.value = text_color
-      
-      if ((cat > 0 && ed_ma === "mais") || (cat > 1 && ed_ma === "edit")){
-        btn_color.disabled = true
-        btn_text_color.disabled = true
+    btn_text_color.id = "text_color_hud_addList"
+    btn_text_color.value = text_color
 
-        btn_color.style.cursor = "not-allowed"
-        btn_text_color.style.cursor = "not-allowed"
 
-        btn_color.style.opacity = "0"
-        btn_text_color.style.opacity = "0"
+    // RESTRIÇÕES
+    if ((cat > 0 && ed_ma === "mais") || (cat > 1 && ed_ma === "edit")){
 
-      }
-      //input nome
-      let btn_nome = document.createElement("input")
-      btn_nome.type = "text"
-      if (ed_ma === "edit"){
-            btn_nome.value = nome
-      }
-      btn_nome.addEventListener("input", () => {
-      let texto = btn_nome.value
-      texto_previa.textContent = texto})
+      btn_color.disabled = true
+      btn_text_color.disabled = true
 
-      btn_nome.id = "nome_hud_addList"
-      
-      //input confirm
-      let btn_confirm = document.createElement("button")
-      btn_confirm.id = "confirm_hud_addList"
-      btn_confirm.textContent =">>"
-      btn_confirm.addEventListener("click", () => addList(id_co, btn_color.value, btn_nome.value, btn_text_color.value));
-      
-      div_hud.addEventListener("keydown", (e) => {
+      btn_color.style.cursor = "not-allowed"
+      btn_text_color.style.cursor = "not-allowed"
 
-        if(e.key === "Enter"){
-            addList(id_co, btn_color.value, btn_nome.value, btn_text_color.value)
+      btn_color.style.opacity = "0"
+      btn_text_color.style.opacity = "0"
+    }
+
+
+    // INPUT NOME
+    let btn_nome = document.createElement("input")
+    btn_nome.type = "text"
+
+    if (ed_ma === "edit"){
+      btn_nome.value = nome
+    }
+
+    btn_nome.addEventListener("input", () => {
+      texto_previa.textContent = btn_nome.value
+    })
+
+    btn_nome.id = "nome_hud_addList"
+
+
+    // CAMPO VALOR
+    let campo_valor = document.createElement("div")
+    campo_valor.className = "campo_valor"
+    campo_valor.style.display = "flex"
+    campo_valor.style.alignItems = "center"
+
+    let valor = document.createElement("input")
+    valor.className = "valor"
+    valor.type = "number"
+    valor.step = "0.01"
+    valor.value = "0"
+    valor.addEventListener("input", () => {
+
+      let v = parseFloat(valor.value) || 0
+
+      valor_previa.textContent =
+        "R$ " + v.toFixed(2).replace(".", ",")
+
+    })
+    
+
+
+    // FUNÇÃO CONFIRMAR
+    function confirmar(){
+      addList(
+        id_co,
+        btn_color.value,
+        btn_nome.value,
+        btn_text_color.value,
+        parseFloat(valor.value)
+      )
+    }
+
+
+    // ENTER NO NOME
+    btn_nome.addEventListener("keydown", (e)=>{
+
+      if(e.key === "Enter"){
+        e.preventDefault()
+
+        if ((cat === 0) || (cat === 1 && ed_ma === "edit")){
+          confirmar()
+        }else{
+          valor.focus()
         }
-        })
-      
-      //input valor
-      let campo_valor = document.createElement("div")
-      campo_valor.className = "campo_valor"
-      campo_valor.style.display = "flex"
-      campo_valor.style.alignItems = "center"
-      let valor = document.createElement("input")
-      valor.className = "valor"
-      valor.type = "text"
+      }
+
+    })
+
+
+    // ENTER NO VALOR
+    valor.addEventListener("keydown",(e)=>{
+
+      if(e.key === "Enter"){
+        e.preventDefault()
+        confirmar()
+      }
+
+    })
+
+
+    // BOTAO CONFIRMAR
+    let btn_confirm = document.createElement("button")
+    btn_confirm.id = "confirm_hud_addList"
+    btn_confirm.textContent = ">>"
+
+    btn_confirm.addEventListener("click", confirmar)
+
+
+    // MONTAR HUD
+    document.body.appendChild(div)
+
+    div.appendChild(div_hud)
+
+    div_hud.appendChild(btn_delet)
+    div_hud.appendChild(btn_color)
+    div_hud.appendChild(btn_text_color)
+
+    div_hud.appendChild(btn_nome)
+
+    btn_nome.focus()
+
+
+    // MOSTRAR OU NAO VALOR
+    if (cat === 0 || (cat === 1 && ed_ma === "edit")){
+
+      valor.disabled = true
+      valor.style.cursor = "not-allowed"
+      valor.style.opacity = "0"
+
+    }else{
 
       let moeda = document.createElement("span")
       moeda.textContent = "R$"
-      
 
       campo_valor.appendChild(moeda)
       campo_valor.appendChild(valor)
 
-
-    
-
-
-      document.body.appendChild(div)
-      div.appendChild(div_hud)
-      div_hud.appendChild(btn_delet)
-      div_hud.appendChild(btn_color)
-      div_hud.appendChild(btn_text_color)
-
-      div_hud.appendChild(btn_nome)
-      div_hud.appendChild(btn_confirm)
-      
       div_hud.appendChild(campo_valor)
+    }
 
-      div_hud.appendChild(div_previa)
-
-
-
-
+    div_hud.appendChild(btn_confirm)
+    div_hud.appendChild(div_previa)
 
   }
+
   function Delet_hud_addList(){
     const overlay = document.getElementById("overlay_hud_addList")
 
