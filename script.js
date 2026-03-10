@@ -380,7 +380,10 @@ function calcularSomas(item){
       col.innerHTML = "";
     });
   }
-
+function parseMoeda(valor){
+  if(!valor) return 0
+  return parseFloat(valor.toString().replace(",", ".")) || 0
+}
  function Hud_addList(id_co){
 
     let codificar = id_co.split("_");
@@ -521,8 +524,7 @@ function calcularSomas(item){
     valor.value = "0"
     valor.addEventListener("input", () => {
 
-      let v = parseFloat(valor.value) || 0
-
+      let v = parseMoeda(valor.value)
       valor_previa.textContent =
         "R$ " + v.toFixed(2).replace(".", ",")
 
@@ -537,7 +539,7 @@ function calcularSomas(item){
         btn_color.value,
         btn_nome.value,
         btn_text_color.value,
-        parseFloat(valor.value)
+        parseMoeda(valor.value)
       )
     }
 
